@@ -1,12 +1,106 @@
-import Header from './components/header'
+import { useState } from "react";
+import { Email } from "./components/Email";
+import Header from "./components/header";
 
-import initialEmails from './data/emails'
+import initialEmails from "./data/emails";
 
-import './styles/app.css'
+import "./styles/app.css";
 
 function App() {
   // Use initialEmails for state
-  console.log(initialEmails)
+  const [gmail, setGmail] = useState({
+    allEmails: initialEmails,
+    filters: [],
+    filteredEmails: initialEmails,
+    activeTab: "inbox",
+  });
+
+  const getUnreadEmails = (emails) => {
+    const unreadEmails = emails.filter((email) => !email.read);
+    return unreadEmails;
+  };
+
+  const getStarredEmails = (emails) => {
+    const starredEmails = emails.filter((email) => email.starred);
+    return starredEmails;
+  };
+
+  const filterEmails = () => {
+    let filtered = [...gmail.allEmails];
+    if (gmail.filters.includes("starred")) {
+      filtered = getStarredEmails(filtered);
+    }
+    if (gmail.filters.includes("unread")) {
+      filtered = getUnreadEmails(filtered);
+    }
+    console.log(filtered);
+    return filtered;
+  };
+
+  const toggleRead = (id) => {
+    const updatedEmails = gmail.allEmails.map((email) =>
+      email.id === id ? { ...email, read: !email.read } : email
+    );
+
+    gmail.allEmails = updatedEmails;
+
+    setGmail({
+      ...gmail,
+      // allEmails: updatedEmails,
+      filteredEmails: filterEmails(),
+    });
+  };
+
+  const toggleStar = (id) => {
+    const updatedEmails = gmail.allEmails.map((email) =>
+      email.id === id ? { ...email, starred: !email.starred } : email
+    );
+
+    gmail.allEmails = updatedEmails;
+
+    setGmail({
+      ...gmail,
+      filteredEmails: filterEmails(),
+    });
+  };
+
+  const toggleHideReadEmails = (e) => {
+    const checked = e.target.checked;
+
+    if (checked) {
+      gmail.filters = [...gmail.filters, "unread"];
+      setGmail({
+        ...gmail,
+        filteredEmails: filterEmails(),
+      });
+    } else {
+      gmail.filters = [gmail.filters.filter((filter) => !filter === "unread")];
+      setGmail({
+        ...gmail,
+        filteredEmails: filterEmails(),
+      });
+    }
+    console.log("gmail", gmail);
+  };
+
+  const getInbox = (event) => {
+    gmail.filters = [gmail.filters.filter((filter) => !filter === "starred")];
+    setGmail({
+      ...gmail,
+      activeTab: "inbox",
+      filteredEmails: filterEmails(),
+    });
+  };
+
+  const getStarredInbox = (event) => {
+    console.log(event.target.classList);
+    gmail.filters = [...gmail.filters, "starred"];
+    setGmail({
+      ...gmail,
+      activeTab: "starred",
+      filteredEmails: filterEmails(),
+    });
+  };
 
   return (
     <div className="app">
@@ -14,18 +108,20 @@ function App() {
       <nav className="left-menu">
         <ul className="inbox-list">
           <li
-            className="item active"
-            // onClick={() => {}}
+            className={gmail.activeTab === "inbox" ? "item active" : "item"}
+            onClick={getInbox}
           >
             <span className="label">Inbox</span>
-            <span className="count">?</span>
+            <span className="count">{gmail.allEmails.length}</span>
           </li>
           <li
-            className="item"
-            // onClick={() => {}}
+            className={gmail.activeTab === "starred" ? "item active" : "item"}
+            onClick={getStarredInbox}
           >
             <span className="label">Starred</span>
-            <span className="count">?</span>
+            <span className="count">
+              {getStarredEmails(gmail.allEmails).length}
+            </span>
           </li>
 
           <li className="item toggle">
@@ -33,15 +129,29 @@ function App() {
             <input
               id="hide-read"
               type="checkbox"
-              checked={false}
-              // onChange={() => {}}
+              onChange={toggleHideReadEmails}
             />
           </li>
         </ul>
       </nav>
-      <main className="emails">{/* Render a list of emails here */}</main>
+      <main className="emails">
+        <ul>
+          {gmail.filteredEmails.map((email) => (
+            <Email
+              key={email.id}
+              id={email.id}
+              sender={email.sender}
+              title={email.title}
+              read={email.read}
+              starred={email.starred}
+              toggleRead={toggleRead}
+              toggleStar={toggleStar}
+            />
+          ))}
+        </ul>
+      </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
